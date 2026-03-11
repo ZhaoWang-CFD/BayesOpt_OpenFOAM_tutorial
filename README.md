@@ -1,6 +1,6 @@
 # Optimizing OpenFOAM's interfacial momentum transports via Bayesian optimization
 
-This project extends from JanisGeise's repository, adding a Bayesian optimisation workflow for interfacial momentum transport models in OpenFOAM wall boiling tutorial case. 
+This project extends JanisGeise's repository, adding a Bayesian optimisation workflow for interfacial momentum transport models in OpenFOAM wall boiling tutorial case. 
 
 JanisGeise's repo: https://github.com/JanisGeise/BayesOpt_solverSettings
 
@@ -14,11 +14,11 @@ The instructions and tests are tailored to:
 - Python 3.11
 
 ### Files added
--Bayesian_OpenFOAM_tutorial/test_cases/wallBoiling_template/ #OpenFOAM case template + validation data \n
--Bayesian_OpenFOAM_tutorial/wallBoiling_local.yaml \n
--Bayesian_OpenFOAM_tutorial/run_wallBoiling.py \n
--Bayesian_OpenFOAM_tutorial/execution_wallBoiling.py \n
--Bayesian_OpenFOAM_tutorial/eval_wallBoiling_bo.py \n
+-Bayesian_OpenFOAM_tutorial/test_cases/wallBoiling_template/ #OpenFOAM case template + validation data 
+-Bayesian_OpenFOAM_tutorial/wallBoiling_local.yaml 
+-Bayesian_OpenFOAM_tutorial/run_wallBoiling.py 
+-Bayesian_OpenFOAM_tutorial/execution_wallBoiling.py 
+-Bayesian_OpenFOAM_tutorial/eval_wallBoiling_bo.py 
 
 ### Set up before running
 
