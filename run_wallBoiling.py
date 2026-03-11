@@ -1,0 +1,127 @@
+import sys
+from os import makedirs
+from os.path import isdir, join
+from math import log10
+from logging import INFO
+from yaml import safe_load
+from smartsim import Experiment
+from smartsim.settings import RunSettings, MpirunSettings, SrunSettings
+from ax.service.ax_client import AxClient
+from ax.generation_strategy.generation_strategy import GenerationStrategy, GenerationStep
+from ax.modelbridge.registry import Generators
+from ax.service.utils.instantiation import ObjectiveProperties
+from ax.global_stopping.strategies.improvement import ImprovementGlobalStoppingStrategy
+from ax.utils.common.logger import get_logger
+from ax.storage.json_store.save import save_experiment
+from execution_wallBoiling import run_parameter_variation, batch_settings_from_config, LOG10_KEYS
+
+Generators
+# load settings
+config_file = sys.argv[1] if len(sys.argv) > 1 else "config.yaml"
+try:
+    with open(config_file, "r") as cf:
+        config = safe_load(cf)
+except Exception as e:
+    print(e)
+
+# set up execution infrastructure
+makedirs(config["experiment"]["exp_path"], exist_ok=True)
+exp = Experiment(**config["experiment"])
+
+# run base case if necessary
+sim_config = config["simulation"]
+param_group = config.get("param_group", "gamg")
+metric_name = config.get("objective", {}).get("name","execution_time")
+base_case_path = sim_config["base_case"]
+base_name = base_case_path.split("/")[-1]
+rs = RunSettings(exe="bash", exe_args="Allrun.pre")
+bs = batch_settings_from_config(exp, config.get("batch_settings"))
+if not isdir(join(exp.exp_path, "base_sim")):
+    # preprocessing and initialization
+    base_sim = exp.create_model(
+        "base_sim",
+        params={
+                "startTime" : sim_config["startTime"],
+                "endTime": sim_config["startTime"] + sim_config["duration"],
+                "writeInterval" : sim_config["writeInterval"],
+                "deltaT" : sim_config["deltaT"]
+            } | sim_config[param_group],
+        run_settings=rs,
+        batch_settings=bs,
+    )
+    base_sim.attach_generator_files(to_configure=base_case_path)
+    exp.generate(base_sim, overwrite=True, tag="!")
+    exp.start(base_sim, block=True, summary=True)
+    # initial solver execution
+    launcher = config["experiment"]["launcher"]
+    settings_class = MpirunSettings if launcher == "local" else SrunSettings
+    rs = settings_class(
+        exe=sim_config["solver"],
+        exe_args=f"-case {base_sim.path} -parallel",
+        run_args=sim_config.get("run_args")
+    )
+    base_solver = exp.create_model(
+        name="base_sim_solve",
+        run_settings=rs,
+        batch_settings=bs
+    )
+    exp.start(base_solver, block=True, summary=True)
+
+# perform optimization
+opt_config = config["optimization"]
+logger = get_logger(name="ax")
+logger.setLevel(INFO)
+for i, startTime in enumerate(opt_config["startTime"]):
+    gs = GenerationStrategy(
+        steps=[
+            GenerationStep(
+                model=Generators.SOBOL,
+                num_trials=opt_config["sobol_trials"],
+                max_parallelism=opt_config["sobol_trials"],
+            ),
+            GenerationStep(
+                model=Generators.BO_MIXED,
+                num_trials=opt_config["bo_trials"],
+                max_parallelism=opt_config["batch_size"],
+            ),
+        ]
+    )
+    stopping_strategy = ImprovementGlobalStoppingStrategy(**opt_config["stopping"])
+    ax_client = AxClient(
+        random_seed=opt_config["seed"],
+        generation_strategy=gs,
+        global_stopping_strategy=stopping_strategy
+    )
+    ax_client.create_experiment(
+        name=f"{config['experiment']['name']}-ax-{i}",
+        parameters=list(opt_config[param_group].values()),
+        overwrite_existing_experiment=True,
+        objectives={metric_name: ObjectiveProperties(minimize=True)},
+    )
+
+    complete_bo = False
+    complete_sobol = False
+    default_trial = {
+        key : (log10(float(sim_config[param_group][key])) if key in LOG10_KEYS else sim_config[param_group][key])
+        for key in opt_config[param_group].keys()
+    }
+    trial, idx = ax_client.attach_trial(default_trial)
+    idx, obj = list(run_parameter_variation(exp=exp, trials={idx : trial}, config=config, time_idx=i).items())[0]
+    ax_client.complete_trial(trial_index=idx, raw_data={metric_name: obj})
+    while not (complete_sobol and complete_bo):
+        trials, complete = ax_client.get_next_trials(opt_config["batch_size"])
+        if not trials:
+            complete, complete_sobol, complete_bo = True, True, True
+        if complete and not complete_sobol:
+            complete_sobol = True
+            complete = False
+            complete_bo = complete and complete_sobol
+        if not complete:
+            logger.info("running parameter variation again")
+            results = run_parameter_variation(exp=exp, trials=trials, config=config, time_idx=i)
+            for idx, obj in results.items():
+                ax_client.complete_trial(trial_index=idx, raw_data={metric_name: obj})
+        else:
+            logger.info("All trials complete. Saving results.")
+            ax_client.save_to_json_file(join(exp.exp_path, f"ax_client_int_{i}.json"))
+            save_experiment(experiment=ax_client.experiment, filepath=join(exp.exp_path, f"ax_experiment_int_{i}.json"))

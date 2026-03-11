@@ -1,0 +1,77 @@
+experiment:
+  name: "wallBoiling_bo"
+  exp_path: "run/wallBoiling_bo"
+  launcher: "local"
+
+param_group: "phaseProperties"
+
+simulation:
+  base_case: "test_cases/wallBoiling_template"
+  solver: "multiphaseEulerFoam"
+  run_args:
+    np: 2
+  startTime: 0
+  duration: 4
+  writeInterval: 1
+  deltaT: 1.0e-3
+  phaseProperties:
+    TomiyamaLiftCl: 0.10
+    AntalWL_Cw1: 0.05
+    AntalWL_Cw2: 0.5
+    LopezDeBertadanoTD_Ctd: 0.10
+
+optimization:
+  startTime: [0]
+  duration: 4
+  writeInterval: 4
+  deltaT: 1.0e-4
+
+  sobol_trials: 2
+  bo_trials: 3
+  batch_size: 1
+  n_repeat_trials: 3
+  repeated_trials_parallel: False
+  bad_value: 10
+  seed: 0
+  device: "cpu"
+  stopping:
+    min_trials: 6
+    window_size: 3
+    improvement_bar: 0.001
+
+  phaseProperties:
+    TomiyamaLiftCl:
+      name: "TomiyamaLiftCl"
+      type: "range"
+      value_type: "float"
+      bounds: [0.0, 1.0]
+    AntalWL_Cw1:
+      name: "AntalWL_Cw1"
+      type: "range"
+      value_type: "float"
+      bounds: [0.0, 0.2]
+    AntalWL_Cw2:
+      name: "AntalWL_Cw2"
+      type: "range"
+      value_type: "float"
+      bounds: [0.0, 1.0]
+    LopezDeBertadanoTD_Ctd:
+      name: "LopezDeBertadanoTD_Ctd"
+      type: "range"
+      value_type: "float"
+      bounds: [0.0, 1.0]
+objective:
+  name: "weighted_mse"
+  w_alpha: 0.5
+  w_d: 0.5
+  exp_alpha_csv: "test_cases/wallBoiling_template/validation/exptData/vof_deb1.txt"
+  exp_d_csv: "test_cases/wallBoiling_template/validation/exptData/d_deb1.txt"
+
+  sim_root: "postProcessing/radialRaw"
+  sim_file: "radial.xy"
+
+  # radial.xy arrangement
+  # if columns are r, alpha.gas, d.gas (3 columns)
+  alpha_col: 2
+  d_col: 3
+
