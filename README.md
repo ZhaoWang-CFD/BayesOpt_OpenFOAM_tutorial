@@ -14,11 +14,11 @@ The instructions and tests are tailored to:
 - Python 3.11
 
 ### Files added
--Bayesian_OpenFOAM_tutorial/test_cases/wallBoiling_template/ #OpenFOAM case template + validation data
--Bayesian_OpenFOAM_tutorial/wallBoiling_local.yaml
--Bayesian_OpenFOAM_tutorial/run_wallBoiling.py
--Bayesian_OpenFOAM_tutorial/execution_wallBoiling.py
--Bayesian_OpenFOAM_tutorial/eval_wallBoiling_bo.py
+-Bayesian_OpenFOAM_tutorial/test_cases/wallBoiling_template/ #OpenFOAM case template + validation data \n
+-Bayesian_OpenFOAM_tutorial/wallBoiling_local.yaml \n
+-Bayesian_OpenFOAM_tutorial/run_wallBoiling.py \n
+-Bayesian_OpenFOAM_tutorial/execution_wallBoiling.py \n
+-Bayesian_OpenFOAM_tutorial/eval_wallBoiling_bo.py \n
 
 ### Set up before running
 
@@ -43,3 +43,12 @@ python eval_wallBoiling_bo.py #postProcessing
 
 -run/wallBoiling_bo/
 -output.wallBoiling_bo/
+
+### Debug
+
+1. If you see the error "MudleNotFoundError: No module named 'ax.modelbridge'", run the following commands to reinstall ax-platform:
+```
+source bopt/bin/activate
+python -m pip uninstall -y ax ax-platform
+python -m pip install --no-cache-dir "ax-platform==1.0.0"
+```
