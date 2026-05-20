@@ -7,19 +7,20 @@ JanisGeise's repo: https://github.com/JanisGeise/BayesOpt_solverSettings
 ## Getting started - local execution
 
 ### Dependencies
-
+```text
 The instructions and tests are tailored to:
 - OpenFOAM-v2406 (JanisGeise's test cases)
 - OpenFOAM-10 (wall boiling case)
 - Python 3.11
-
+```
 ### Files added
+```text
 -Bayesian_OpenFOAM_tutorial/test_cases/wallBoiling_template/ #OpenFOAM case template + validation data
 -Bayesian_OpenFOAM_tutorial/wallBoiling_local.yaml 
 -Bayesian_OpenFOAM_tutorial/run_wallBoiling.py 
 -Bayesian_OpenFOAM_tutorial/execution_wallBoiling.py 
 -Bayesian_OpenFOAM_tutorial/eval_wallBoiling_bo.py 
-
+```
 ### Set up before running
 
 ```bash
