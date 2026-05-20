@@ -41,10 +41,10 @@ python run_wallBoiling.py wallBoiling_local.yaml &> log.wallBoiling
 python eval_wallBoiling_bo.py #postProcessing
 ```
 ### Outputs
-
+```text
 -run/wallBoiling_bo/
 -output.wallBoiling_bo/
-
+```
 ### Debug
 
 1. If you see the error "ModuleNotFoundError: No module named 'ax.modelbridge'", run the following commands to reinstall ax-platform:
